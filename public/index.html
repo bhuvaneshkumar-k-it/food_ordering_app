@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zwiggato | Food Ordering</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__content">
+        <h1>Welcome to Zwiggato</h1>
+        <p id="user-greeting"></p>
+        <p>Your friendly neighborhood hub for discovering menus and placing cravings on demand.</p>
+        <div class="hero__actions">
+          <button id="view-restaurants" class="btn-primary">Browse Zwiggato Spots</button>
+          <button id="logout-btn" class="btn-secondary" type="button">Logout</button>
+        </div>
+        <p id="auth-status" class="status-message"></p>
+      </div>
+      <div class="hero__image">
+        <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=60" alt="Food platter" />
+      </div>
+    </header>
+
+    <main class="layout">
+      <div class="column column--primary">
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <h2>Restaurants</h2>
+              <p class="section-description">
+                Tap a card to instantly preview that kitchen’s menu highlights.
+              </p>
+            </div>
+          </div>
+          <div id="restaurants-list" class="grid"></div>
+          <div id="restaurants-empty" class="empty-state hidden">No restaurants available.</div>
+        </section>
+
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <h2 id="menu-title">Menu</h2>
+              <small id="menu-subtitle">Select a restaurant to view its menu.</small>
+            </div>
+          </div>
+          <div id="menu-list" class="grid"></div>
+          <div id="menu-empty" class="empty-state">Pick a restaurant to load menu items.</div>
+        </section>
+      </div>
+
+      <div class="column column--secondary">
+        <section class="card accent-card">
+          <div class="section-header">
+            <div>
+              <h2>Your Cart</h2>
+              <p class="section-description">Every item you add appears here instantly.</p>
+            </div>
+          </div>
+          <div id="cart-items" class="cart-items"></div>
+          <div class="cart-summary">
+            <div class="cart-row">
+              <span>Subtotal</span>
+              <strong id="cart-subtotal">$0.00</strong>
+            </div>
+            <div class="cart-row">
+              <span>Delivery Fee</span>
+              <strong id="delivery-fee">$3.50</strong>
+            </div>
+            <div class="cart-row total">
+              <span>Total</span>
+              <strong id="cart-total">$0.00</strong>
+            </div>
+          </div>
+          <button id="place-order" class="btn-primary" disabled>Place Order</button>
+          <div id="cart-message" class="status-message"></div>
+        </section>
+
+        <section class="card accent-card">
+          <div class="section-header">
+            <div>
+              <h2>Recent Orders</h2>
+              <small>Track your latest cravings and reorder in a click.</small>
+            </div>
+            <button id="refresh-orders" class="btn-secondary">Refresh</button>
+          </div>
+          <div id="orders-list" class="orders-list"></div>
+          <div id="orders-empty" class="empty-state">No orders placed yet.</div>
+        </section>
+      </div>
+    </main>
+
+    <template id="restaurant-card-template">
+      <article class="restaurant-card">
+        <img class="restaurant-card__image" />
+        <div class="restaurant-card__body">
+          <h3 class="restaurant-card__name"></h3>
+          <p class="restaurant-card__cuisine"></p>
+        </div>
+      </article>
+    </template>
+
+    <template id="menu-card-template">
+      <article class="menu-card">
+        <div>
+          <h3 class="menu-card__name"></h3>
+          <p class="menu-card__description"></p>
+        </div>
+        <div class="menu-card__footer">
+          <span class="menu-card__price"></span>
+          <button class="btn-secondary">Add</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="cart-item-template">
+      <div class="cart-item">
+        <div>
+          <strong class="cart-item__name"></strong>
+          <p class="cart-item__details"></p>
+        </div>
+        <div class="cart-item__actions">
+          <button data-action="decrease">-</button>
+          <span class="cart-item__quantity"></span>
+          <button data-action="increase">+</button>
+        </div>
+      </div>
+    </template>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
