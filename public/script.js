@@ -28,9 +28,6 @@ const ordersListEl = document.getElementById('orders-list');
 const ordersEmptyEl = document.getElementById('orders-empty');
 const refreshOrdersBtn = document.getElementById('refresh-orders');
 const viewRestaurantsBtn = document.getElementById('view-restaurants');
-const logoutBtn = document.getElementById('logout-btn');
-const authStatusEl = document.getElementById('auth-status');
-const userGreetingEl = document.getElementById('user-greeting');
 
 const restaurantTemplate = document.getElementById('restaurant-card-template');
 const menuTemplate = document.getElementById('menu-card-template');
@@ -48,10 +45,10 @@ const updateMenuHeading = (restaurant) => {
     return;
   }
   menuTitleEl.textContent = restaurant.name;
-  menuSubtitleEl.textContent = `${restaurant.cuisine} • Curated specials`;
+  menuSubtitleEl.textContent = `${restaurant.cuisine} - Curated specials`;
 };
 
-const request = async (path, options = {}, config = {}) => {
+const request = async (path, options = {}) => {
   const headers = options.headers ? { ...options.headers } : {};
   if (options.body && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
@@ -62,51 +59,11 @@ const request = async (path, options = {}, config = {}) => {
       ...options,
       headers,
     });
-    if (response.status === 401 && !config.skipRedirect) {
-      window.location.href = 'login.html';
-      throw new Error('Unauthorized');
-    }
     return response;
   } catch (error) {
-    if (!config.silent) {
-      console.error('Network error:', error);
-      alert('Unable to reach Zwiggato servers. Please ensure the backend (npm start) is running.');
-    }
+    console.error('Network error:', error);
+    alert('Unable to reach Zwiggato servers. Please ensure the backend (npm start) is running.');
     throw error;
-  }
-};
-
-const ensureAuthenticated = async () => {
-  try {
-    const res = await request('/auth/me', {}, { skipRedirect: true });
-    if (!res.ok) {
-      window.location.href = 'login.html';
-      return null;
-    }
-    const user = await res.json();
-    if (userGreetingEl) {
-      userGreetingEl.textContent = `Hi, ${user.name}!`;
-    }
-    if (authStatusEl) {
-      authStatusEl.textContent = 'You are signed in.';
-    }
-    return user;
-  } catch (error) {
-    window.location.href = 'login.html';
-    return null;
-  }
-};
-
-const handleLogout = async () => {
-  if (authStatusEl) {
-    authStatusEl.textContent = 'Signing out...';
-  }
-  try {
-    await request('/auth/logout', { method: 'POST' }, { skipRedirect: true });
-  } catch (error) {
-    console.error(error);
-  } finally {
-    window.location.href = 'login.html';
   }
 };
 
@@ -372,18 +329,11 @@ viewRestaurantsBtn.addEventListener('click', () => {
   document.querySelector('.layout').scrollIntoView({ behavior: 'smooth' });
 });
 
-const init = async () => {
-  const user = await ensureAuthenticated();
-  if (!user) return;
+const init = () => {
   loadCart();
   renderCart();
   fetchRestaurants();
   fetchOrders();
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-  }
-  init();
-});
+document.addEventListener('DOMContentLoaded', init);
