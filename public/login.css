@@ -1,0 +1,146 @@
+:root {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --primary: #ff7043;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 20px 35px rgba(15, 23, 42, 0.1);
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff5f0, #f8fafc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.auth-layout {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-card {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: var(--shadow);
+}
+
+.auth-card__header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+}
+
+.auth-tagline {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.input-group label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.input-group input {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-group input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 112, 67, 0.15);
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.auth-switch {
+  text-align: center;
+  color: var(--muted);
+  margin: 0;
+}
+
+.btn-link {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-message {
+  min-height: 1.25rem;
+  margin-top: 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.auth-message[data-type='error'] {
+  color: #dc2626;
+}
+
+.auth-message[data-type='success'] {
+  color: #15803d;
+}
+
+.auth-message.warning {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 2rem 1.5rem;
+  }
+}

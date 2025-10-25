@@ -1,12 +1,16 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const DB_PATH = path.join(__dirname, 'database.db');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const SESSION_SECRET = process.env.SESSION_SECRET || 'zwiggato-secret';
+const SALT_ROUNDS = 10;
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:4000',
   'http://127.0.0.1:4000',
@@ -31,6 +35,17 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+    },
+  })
+);
 app.use(express.static(PUBLIC_DIR));
 
 const db = new sqlite3.Database(DB_PATH, (err) => {
@@ -599,6 +614,16 @@ const seedDatabase = () => {
       )`
     );
 
+    db.run(
+      `CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`
+    );
+
     (async () => {
       try {
         await ensureRestaurants();
@@ -612,8 +637,101 @@ const seedDatabase = () => {
 
 seedDatabase();
 
+const requireAuth = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  return next();
+};
 
-app.get('/restaurants', (_req, res) => {
+const respondWithUser = (res, user) => {
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  return res.json({ id: user.id, name: user.name, email: user.email });
+};
+
+app.post('/auth/signup', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+    const trimmedName = String(name).trim();
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existing = await getQuery('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    const passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS);
+    const result = await runQuery(
+      'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+      [trimmedName, normalizedEmail, passwordHash]
+    );
+    req.session.userId = result.lastID;
+    const user = await getQuery('SELECT id, name, email FROM users WHERE id = ?', [result.lastID]);
+    return res.status(201).json(user);
+  } catch (error) {
+    console.error('Signup error:', error.message);
+    return res.status(500).json({ error: 'Unable to create account' });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await getQuery('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const passwordMatch = await bcrypt.compare(String(password), user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    req.session.userId = user.id;
+    return respondWithUser(res, user);
+  } catch (error) {
+    console.error('Login error:', error.message);
+    return res.status(500).json({ error: 'Unable to login' });
+  }
+});
+
+app.post('/auth/logout', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(200).json({ success: true });
+  }
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err.message);
+      return res.status(500).json({ error: 'Unable to logout' });
+    }
+    res.clearCookie('connect.sid');
+    return res.json({ success: true });
+  });
+});
+
+app.get('/auth/me', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const user = await getQuery('SELECT id, name, email FROM users WHERE id = ?', [req.session.userId]);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    return res.json(user);
+  } catch (error) {
+    console.error('Fetch current user error:', error.message);
+    return res.status(500).json({ error: 'Unable to fetch user' });
+  }
+});
+
+app.get('/restaurants', requireAuth, (_req, res) => {
   db.all('SELECT * FROM restaurants', (err, rows) => {
     if (err) {
       console.error('Failed to fetch restaurants:', err.message);
@@ -623,7 +741,7 @@ app.get('/restaurants', (_req, res) => {
   });
 });
 
-app.get('/restaurants/:id/menu', (req, res) => {
+app.get('/restaurants/:id/menu', requireAuth, (req, res) => {
   const restaurantId = Number(req.params.id);
   if (Number.isNaN(restaurantId)) {
     return res.status(400).json({ error: 'Invalid restaurant ID' });
@@ -638,7 +756,7 @@ app.get('/restaurants/:id/menu', (req, res) => {
   });
 });
 
-app.get('/orders', (_req, res) => {
+app.get('/orders', requireAuth, (_req, res) => {
   db.all('SELECT * FROM orders ORDER BY created_at DESC', (err, rows) => {
     if (err) {
       console.error('Failed to fetch orders:', err.message);
@@ -652,7 +770,7 @@ app.get('/orders', (_req, res) => {
   });
 });
 
-app.post('/orders', (req, res) => {
+app.post('/orders', requireAuth, (req, res) => {
   const { items, total } = req.body;
 
   if (!Array.isArray(items) || items.length === 0) {
